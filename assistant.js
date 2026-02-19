@@ -4,6 +4,221 @@ function askQuestion(question) {
     sendMessage();
 }
 
+// ---------------------------
+// DeepSeek API (optional)
+// ---------------------------
+
+const DEFAULT_CONFIG = {
+    DEEPSEEK_API_KEY: '',
+    DEEPSEEK_API_URL: 'https://api.deepseek.com/chat/completions',
+    DEEPSEEK_MODEL: 'deepseek-chat',
+    GYM_NAME: '活力健身馆',
+    GYM_LOCATION: '香港大学'
+};
+
+function getConfig() {
+    const cfg = (typeof window !== 'undefined' && window.CONFIG) ? window.CONFIG : {};
+    return { ...DEFAULT_CONFIG, ...cfg };
+}
+
+// In-memory conversation history for the API (simple, page-lifetime only)
+const conversationHistory = [];
+
+// Gentle hint if API key is not configured (shown once per page load)
+try {
+    const cfg = getConfig();
+    if (!cfg.DEEPSEEK_API_KEY) {
+        console.info('[AI助手] 未配置 DeepSeek API Key，将使用离线规则回答。可在 config.js 中填入 DEEPSEEK_API_KEY 以启用联网模型。');
+    }
+} catch (_) {}
+
+// Gym course packages (templates) — used by the model for recommendations
+// Keep in sync with `training.js` coursePackages.
+const GYM_COURSE_PACKAGES = [
+    {
+        id: 'all',
+        name: '🏋️ 基础健身课程',
+        targetAreas: ['arms', 'legs', 'core', 'chest', 'back', 'cardio'],
+        instructor: '张教练',
+        duration: '90分钟',
+        frequency: '每周3次',
+        price: '¥599/月',
+        schedule: '周一、周三、周五 19:00-20:30',
+        description: '适合健身新手的全面基础课程，涵盖全身各部位基础训练（力量+有氧+拉伸），建立动作模式与训练习惯。'
+    },
+    {
+        id: 'strength_arms_legs',
+        name: '💪 力量增强课程',
+        targetAreas: ['arms', 'legs'],
+        instructor: '李教练',
+        duration: '75分钟',
+        frequency: '每周3次',
+        price: '¥499/月',
+        schedule: '周二、周四、周六 19:00-20:15',
+        description: '专注手臂与下肢力量提升的系统课程，偏复合动作与渐进负重，提升整体力量与运动表现。'
+    },
+    {
+        id: 'full_body_strength',
+        name: '🔥 全身力量强化课程',
+        targetAreas: ['arms', 'legs', 'core', 'chest', 'back'],
+        instructor: '王教练',
+        duration: '80分钟',
+        frequency: '每周3次',
+        price: '¥549/月',
+        schedule: '周一、周三、周五 18:00-19:20',
+        description: '覆盖手臂/下肢/核心/胸/背的系统力量训练，适合想整体提升力量与体态的人群。'
+    },
+    {
+        id: 'upper_body_strength',
+        name: '💪 上肢力量课程',
+        targetAreas: ['arms', 'chest', 'back'],
+        instructor: '张教练',
+        duration: '70分钟',
+        frequency: '每周3次',
+        price: '¥449/月',
+        schedule: '周二、周四、周六 18:30-19:40',
+        description: '上肢综合（手臂+胸+背）强化，兼顾力量与体态，适合长期伏案/圆肩人群。'
+    },
+    {
+        id: 'lower_body_strength',
+        name: '🦵 下肢力量课程',
+        targetAreas: ['legs', 'core'],
+        instructor: '李教练',
+        duration: '65分钟',
+        frequency: '每周3次',
+        price: '¥429/月',
+        schedule: '周一、周三、周五 19:30-20:35',
+        description: '下肢+核心专项强化，围绕深蹲/硬拉/单腿稳定性训练，提升力量与稳定性。'
+    },
+    {
+        id: 'core_focus',
+        name: '🎯 核心力量专项课程',
+        targetAreas: ['core'],
+        instructor: '王教练',
+        duration: '50分钟',
+        frequency: '每周4次',
+        price: '¥349/月',
+        schedule: '周一至周四 19:00-19:50',
+        description: '核心稳定与力量专项，包含腹肌/侧腹/下背训练，改善体态与运动表现。'
+    },
+    {
+        id: 'cardio_strength',
+        name: '❤️ 有氧力量结合课程',
+        targetAreas: ['cardio'],
+        instructor: '赵教练',
+        duration: '60分钟',
+        frequency: '每周4次',
+        price: '¥399/月',
+        schedule: '周一至周四 18:00-19:00',
+        description: '有氧+力量结合，兼顾心肺与力量基础，适合想提升耐力与体能的人群。'
+    },
+    {
+        id: 'arms_focus',
+        name: '💪 手臂力量专项课程',
+        targetAreas: ['arms'],
+        instructor: '张教练',
+        duration: '55分钟',
+        frequency: '每周2次',
+        price: '¥299/月',
+        schedule: '周二、周五 19:00-19:55',
+        description: '手臂专项（含二头/三头/前臂），强调动作标准与渐进超负荷。'
+    },
+    {
+        id: 'legs_focus',
+        name: '🦵 下肢力量专项课程',
+        targetAreas: ['legs'],
+        instructor: '李教练',
+        duration: '60分钟',
+        frequency: '每周2次',
+        price: '¥329/月',
+        schedule: '周三、周六 19:00-20:00',
+        description: '下肢专项（大腿/臀/小腿），提升力量与下肢线条。'
+    }
+];
+
+// Coach profiles (templates) — for “哪个教练更好/评价” questions.
+const GYM_COACHES = [
+    {
+        name: '张教练',
+        rating: 4.8,
+        years: 8,
+        specialties: ['力量训练', '上肢训练', '动作模式纠正'],
+        style: '标准严格、讲解细、适合想把动作打扎实的人'
+    },
+    {
+        name: '李教练',
+        rating: 4.7,
+        years: 7,
+        specialties: ['下肢训练', '力量提升', '训练计划安排'],
+        style: '节奏清晰、推进稳，适合想提升力量与训练系统性的人'
+    },
+    {
+        name: '王教练',
+        rating: 4.6,
+        years: 6,
+        specialties: ['核心稳定', '体态改善', '康复性训练思路（轻度）'],
+        style: '更关注稳定与细节，适合腰背不适/想改善体态的人'
+    },
+    {
+        name: '赵教练',
+        rating: 4.5,
+        years: 5,
+        specialties: ['心肺训练', 'HIIT', '体能提升'],
+        style: '氛围感强、带课有节奏，适合想提升体能/耐力的人'
+    }
+];
+
+function buildSystemPrompt() {
+    const cfg = getConfig();
+    return `你是${cfg.GYM_LOCATION}${cfg.GYM_NAME}的AI健身顾问助手。你的主要任务是帮助用户解决健身/营养/训练/路线相关问题，并在合适的时候自然地给出课程建议（不要硬广）。\n\n` +
+        `【场馆信息】\n- 地点：${cfg.GYM_LOCATION}\n\n` +
+        `【课程库（可推荐）】\n${JSON.stringify(GYM_COURSE_PACKAGES, null, 2)}\n\n` +
+        `【教练信息（可对比评价）】\n${JSON.stringify(GYM_COACHES, null, 2)}\n\n` +
+        `【输出要求】\n` +
+        `1) 用中文，友好、专业、简洁。\n` +
+        `2) 当用户问“推荐上什么课/选哪个课”时：根据用户的不足/目标，推荐1-3门最合适的课程（按最推荐→备选的顺序），并给出理由（匹配点：目标/部位/频率/时间）。\n` +
+        `3) 当用户问“哪个教练更好/评价更好/怎么选教练”时：基于rating/特长/风格客观比较，不要绝对化；如果信息不足先提1-2个澄清问题。\n` +
+        `4) 如果用户问题与健身无关：可以简短回答，但最后用一句自然的话把话题带回健身/课程（可选）。\n` +
+        `5) 不要编造不存在的地址细节（比如具体楼层/门牌），只说“香港大学校园内”。\n`;
+}
+
+async function callDeepSeek(userMessage) {
+    const cfg = getConfig();
+    const apiKey = (cfg.DEEPSEEK_API_KEY || '').trim();
+    if (!apiKey) return null;
+
+    // NOTE: If DeepSeek API doesn’t allow browser CORS, this will fail and we’ll fallback.
+    const payload = {
+        model: cfg.DEEPSEEK_MODEL,
+        messages: [
+            { role: 'system', content: buildSystemPrompt() },
+            ...conversationHistory,
+            { role: 'user', content: userMessage }
+        ],
+        temperature: 0.7,
+        max_tokens: 900
+    };
+
+    const resp = await fetch(cfg.DEEPSEEK_API_URL, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify(payload)
+    });
+
+    if (!resp.ok) {
+        const text = await resp.text().catch(() => '');
+        throw new Error(`DeepSeek API error: ${resp.status} ${text}`.slice(0, 400));
+    }
+
+    const data = await resp.json();
+    const content = data?.choices?.[0]?.message?.content;
+    if (!content) return null;
+    return String(content);
+}
+
 // 发送消息
 async function sendMessage() {
     const input = document.getElementById('chatInput');
@@ -33,26 +248,53 @@ async function sendMessage() {
     messagesDiv.appendChild(loadingMsg);
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
 
-    // 模拟AI思考延迟
-    setTimeout(() => {
+    try {
+        // 保存用户消息到全局变量，供本地函数使用
+        window.lastUserMessage = message;
+
+        // 先尝试 DeepSeek（有 key 才会调用）
+        let responseText = null;
+        try {
+            responseText = await callDeepSeek(message);
+        } catch (e) {
+            console.warn('DeepSeek 调用失败，已降级到本地助手：', e);
+        }
+
+        // 降级到本地规则
+        if (!responseText) {
+            // 轻微的“思考”延迟，让体验更自然
+            await new Promise(r => setTimeout(r, 400 + Math.random() * 400));
+            responseText = generateAIResponse(message);
+        } else {
+            // 更新历史（只记录 API 模式的纯文本，避免把 HTML 注入给模型）
+            conversationHistory.push({ role: 'user', content: message });
+            conversationHistory.push({ role: 'assistant', content: responseText });
+            // 限制历史长度，避免请求过大
+            if (conversationHistory.length > 16) {
+                conversationHistory.splice(0, conversationHistory.length - 16);
+            }
+        }
+
         // 移除加载消息
         messagesDiv.removeChild(loadingMsg);
 
-    // 保存用户消息到全局变量，供其他函数使用
-    window.lastUserMessage = message;
-    
-    // 生成AI回复
-    const response = generateAIResponse(message);
+        // 显示AI回复
         const assistantMsg = document.createElement('div');
         assistantMsg.className = 'message assistant';
-        assistantMsg.innerHTML = response;
-        
+        assistantMsg.innerHTML = String(responseText).replace(/\n/g, '<br>');
         messagesDiv.appendChild(assistantMsg);
         messagesDiv.scrollTop = messagesDiv.scrollHeight;
-
+    } catch (error) {
+        messagesDiv.removeChild(loadingMsg);
+        const errorMsg = document.createElement('div');
+        errorMsg.className = 'message assistant';
+        errorMsg.textContent = '抱歉，发生了错误。请稍后再试。错误信息：' + error.message;
+        messagesDiv.appendChild(errorMsg);
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    } finally {
         // 重新启用发送按钮
         sendBtn.disabled = false;
-    }, 800 + Math.random() * 400); // 800-1200ms的随机延迟，模拟真实AI响应
+    }
 }
 
 // 生成AI回复
