@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI助手 - 活力健身馆</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .chat-container {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            height: 600px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: white;
+            border-radius: 10px;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            padding: 12px 18px;
+            border-radius: 18px;
+            max-width: 80%;
+            line-height: 1.5;
+            animation: slideIn 0.3s;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.user {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            margin-left: auto;
+            text-align: right;
+        }
+
+        .message.assistant {
+            background: #e9ecef;
+            color: #333;
+        }
+
+        .chat-input-container {
+            display: flex;
+            gap: 10px;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 12px 20px;
+            border: 2px solid #e9ecef;
+            border-radius: 25px;
+            font-size: 1em;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .chat-input:focus {
+            border-color: #667eea;
+        }
+
+        .send-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: all 0.3s;
+        }
+
+        .send-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .send-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .loading {
+            opacity: 0.7;
+        }
+
+        .quick-questions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .quick-question-btn {
+            background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+            color: #333;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.3s;
+        }
+
+        .quick-question-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(252, 182, 159, 0.4);
+        }
+
+        @media (max-width: 768px) {
+            .chat-container {
+                height: 500px;
+            }
+
+            .message {
+                max-width: 90%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>💪 活力健身馆</h1>
+            <p>专业指导 · 科学训练 · 健康生活</p>
+        </header>
+
+        <div class="nav-tabs">
+            <a href="index.html" class="nav-tab">🏠 主页</a>
+            <a href="training.html" class="nav-tab">🎯 训练推荐</a>
+            <a href="assistant.html" class="nav-tab active">🤖 AI助手</a>
+            <a href="admin.html" class="nav-tab">📊 管理后台</a>
+        </div>
+
+        <div class="content-section">
+            <h2>AI智能助手</h2>
+            <p style="color: #666; margin-bottom: 20px;">问我任何关于健身、营养、路线导航的问题！</p>
+            
+            <div class="quick-questions">
+                <button class="quick-question-btn" onclick="askQuestion('我手臂缺乏力量该怎么办？')">我手臂缺乏力量该怎么办？</button>
+                <button class="quick-question-btn" onclick="askQuestion('我想减脂应该吃什么？')">我想减脂应该吃什么？</button>
+                <button class="quick-question-btn" onclick="askQuestion('到健身馆的地铁路线')">到健身馆的地铁路线</button>
+                <button class="quick-question-btn" onclick="askQuestion('新手应该怎么开始健身？')">新手应该怎么开始健身？</button>
+            </div>
+
+            <div class="chat-container">
+                <div class="chat-messages" id="chatMessages">
+                    <div class="message assistant">
+                        你好！我是活力健身馆的AI助手。我可以帮你：<br>
+                        ✓ 制定健身和减脂计划<br>
+                        ✓ 提供营养饮食建议<br>
+                        ✓ 规划来健身馆的路线（开车/地铁）<br>
+                        ✓ 解答健身相关问题<br>
+                        ✓ 针对身体部位不足提供训练建议<br><br>
+                        请问有什么可以帮助您的？
+                    </div>
+                </div>
+                <div class="chat-input-container">
+                    <input type="text" class="chat-input" id="chatInput" placeholder="输入您的问题..." onkeypress="if(event.key==='Enter') sendMessage()">
+                    <button class="send-btn" id="sendBtn" onclick="sendMessage()">发送</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="assistant.js"></script>
+</body>
+</html>

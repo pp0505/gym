@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>训练推荐 - 活力健身馆</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .body-parts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .body-part-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+            border: 3px solid transparent;
+        }
+
+        .body-part-card:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.5);
+        }
+
+        .body-part-card.selected {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            border-color: #fff;
+        }
+
+        .body-part-card h3 {
+            font-size: 1.3em;
+            margin-bottom: 10px;
+        }
+
+        .body-part-card p {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+
+        .recommend-btn {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 50px;
+            font-size: 1.2em;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: block;
+            margin: 20px auto;
+            box-shadow: 0 4px 15px rgba(245, 87, 108, 0.4);
+        }
+
+        .recommend-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(245, 87, 108, 0.6);
+        }
+
+        .recommend-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .recommendations {
+            margin-top: 30px;
+            padding: 25px;
+            background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+            border-radius: 15px;
+            display: none;
+        }
+
+        .recommendations.show {
+            display: block;
+        }
+
+        .course-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .course-card h3 {
+            color: #f5576c;
+            margin-bottom: 10px;
+        }
+
+        .course-card p {
+            color: #666;
+            line-height: 1.6;
+        }
+
+        .course-card ul {
+            margin-left: 20px;
+            color: #666;
+        }
+
+        .course-card ul li {
+            margin: 5px 0;
+        }
+
+        @media (max-width: 768px) {
+            .body-parts-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>💪 活力健身馆</h1>
+            <p>专业指导 · 科学训练 · 健康生活</p>
+        </header>
+
+        <div class="nav-tabs">
+            <a href="index.html" class="nav-tab">🏠 主页</a>
+            <a href="training.html" class="nav-tab active">🎯 训练推荐</a>
+            <a href="assistant.html" class="nav-tab">🤖 AI助手</a>
+            <a href="admin.html" class="nav-tab">📊 管理后台</a>
+        </div>
+
+        <div class="content-section">
+            <h2>选择您的不足</h2>
+            <p style="color: #666; margin-bottom: 20px;">请选择您希望加强的身体部位，我们将为您推荐相应的健身房课程</p>
+            
+            <!-- 第一步：选择不足（大板块） -->
+            <div id="mainSections">
+                <h3 style="color: #333; margin-bottom: 15px; margin-top: 20px;">第一步：选择您的不足（可多选）</h3>
+                <div class="body-parts-grid">
+                    <div class="body-part-card" onclick="toggleMainSection(this, 'arms')">
+                        <h3>💪 缺乏手臂力量</h3>
+                        <p>二头肌、三头肌薄弱</p>
+                    </div>
+                    <div class="body-part-card" onclick="toggleMainSection(this, 'legs')">
+                        <h3>🦵 缺乏下肢力量</h3>
+                        <p>腿部、臀部力量不足</p>
+                    </div>
+                    <div class="body-part-card" onclick="toggleMainSection(this, 'core')">
+                        <h3>🎯 缺乏核心力量</h3>
+                        <p>腹肌、腰部力量薄弱</p>
+                    </div>
+                    <div class="body-part-card" onclick="toggleMainSection(this, 'chest')">
+                        <h3>🏋️ 缺乏胸部力量</h3>
+                        <p>胸肌力量不足</p>
+                    </div>
+                    <div class="body-part-card" onclick="toggleMainSection(this, 'back')">
+                        <h3>🔥 缺乏背部力量</h3>
+                        <p>背阔肌、斜方肌薄弱</p>
+                    </div>
+                    <div class="body-part-card" onclick="toggleMainSection(this, 'cardio')">
+                        <h3>❤️ 缺乏心肺耐力</h3>
+                        <p>有氧能力不足</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 第二步：选择具体部位（小板块） -->
+            <div id="subSectionsContainer" style="display: none;">
+                <h3 style="color: #333; margin-bottom: 15px; margin-top: 30px;">第二步：选择具体需要加强的部位（可多选）</h3>
+                <div id="subSectionsGrid">
+                    <!-- 小板块将动态加载 -->
+                </div>
+            </div>
+
+            <!-- 获取推荐按钮 -->
+            <button id="getRecommendBtn" class="recommend-btn" onclick="getRecommendations()" style="display: none;">查看推荐课程</button>
+
+            <!-- 课程推荐 -->
+            <div id="recommendations" class="recommendations">
+                <!-- 推荐内容将动态加载 -->
+            </div>
+        </div>
+    </div>
+
+    <script src="training.js"></script>
+</body>
+</html>
